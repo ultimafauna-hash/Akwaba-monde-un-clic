@@ -59,7 +59,6 @@ export interface Comment {
   articleid: string;
   reportedby?: string[]; // Array of user IDs who reported
   isreported?: boolean;
-  replies?: Comment[];
 }
 
 export interface UserProfile {
@@ -210,20 +209,20 @@ export interface Poll {
 }
 
 export interface SiteSettings {
-  aboutText: string;
+  abouttext: string;
   email: string;
   phone: string;
   address: string;
-  facebookUrl?: string;
-  twitterUrl?: string;
-  instagramUrl?: string;
-  tiktokUrl?: string;
-  linkedinUrl?: string;
-  youtubeUrl?: string;
+  facebookurl?: string;
+  twitterurl?: string;
+  instagramurl?: string;
+  tiktokurl?: string;
+  linkedinurl?: string;
+  youtubeurl?: string;
   // Ads
-  adSlotHeader?: string;
-  adSlotSidebar?: string;
-  adSlotFooter?: string;
+  adslotheader?: string;
+  adslotsidebar?: string;
+  adslotfooter?: string;
   // Breaking News
   urgentbannertext?: string;
   urgentbanneractive?: boolean;
@@ -233,11 +232,11 @@ export interface SiteSettings {
   categories: string[];
   categories_icons?: Record<string, string>;
   // Maintenance
-  maintenanceMode: boolean;
+  maintenancemode: boolean;
   // Donations & Premium
-  donationAmounts: number[];
-  donationPaymentMethods: string[];
-  premiumPrice: number;
+  donationamounts: number[];
+  donationpaymentmethods: string[];
+  premiumprice: number;
   isdonationactive: boolean;
   ispremiumactive: boolean;
   activepaymentmethods: {
@@ -258,14 +257,13 @@ export interface SiteSettings {
     moov?: string;
     wave?: string;
   };
-  premiumduration?: number;
-  paypalId?: string;
-  stripePublicKey?: string;
-  flutterwavePublicKey?: string;
-  orangeMoneyNumber?: string;
-  mtnMoneyNumber?: string;
-  moovMoneyNumber?: string;
-  waveNumber?: string;
+  premiumdurationmonths?: number;
+  orangemoneynumber?: string;
+  mtnmoneynumber?: string;
+  moovmoneynumber?: string;
+  wavenumber?: string;
+  paypalid?: string;
+  stripepublickey?: string;
 }
 
 export interface Subscriber {

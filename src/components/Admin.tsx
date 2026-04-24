@@ -63,6 +63,7 @@ import {
   CreditCard,
   Award,
   CheckCircle,
+  ShieldCheck,
   Dumbbell,
   Trophy,
   History,
@@ -456,7 +457,8 @@ export const AdminDashboard = ({
   onEditWebTV,
   onCreateWebTV,
   onDeleteWebTV,
-  currentUser
+  currentUser,
+  activityLogs = []
 }: { 
   articles: Article[], 
   events: Event[],
@@ -469,6 +471,7 @@ export const AdminDashboard = ({
   liveBlogs: LiveBlog[],
   webTV: WebTV[],
   culturePosts: CulturePost[],
+  activityLogs?: AdminActivityLog[],
   stats?: any,
   onEditArticle: (a: Article) => void,
   onEditEvent: (e: Event) => void,
@@ -534,33 +537,31 @@ export const AdminDashboard = ({
 
   const [searchTerm, setSearchTerm] = useState('');
   const [tempSettings, setTempSettings] = useState<SiteSettings>(settings || {
-    aboutText: '',
+    abouttext: '',
     email: '',
     phone: '',
     address: '',
-    facebookUrl: '',
-    twitterUrl: '',
-    instagramUrl: '',
-    tiktokUrl: '',
-    linkedinUrl: '',
-    youtubeUrl: '',
+    facebookurl: '',
+    twitterurl: '',
+    instagramurl: '',
+    tiktokurl: '',
+    linkedinurl: '',
+    youtubeurl: '',
     categories: [],
-    maintenanceMode: false,
+    maintenancemode: false,
     urgentbanneractive: false,
     urgentbannertext: '',
-    adSlotHeader: '',
-    adSlotSidebar: '',
-    donationAmounts: [1000, 2000, 5000],
-    donationPaymentMethods: [],
-    premiumPrice: 5000,
+    donationamounts: [1000, 2000, 5000],
+    donationpaymentmethods: [],
+    premiumprice: 5000,
     isdonationactive: false,
     ispremiumactive: false,
     activepaymentmethods: {},
     paymentlinks: {},
-    orangeMoneyNumber: '',
-    mtnMoneyNumber: '',
-    moovMoneyNumber: '',
-    waveNumber: ''
+    orangemoneynumber: '',
+    mtnmoneynumber: '',
+    moovmoneynumber: '',
+    wavenumber: ''
   });
   const [newCategory, setNewCategory] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -578,7 +579,7 @@ export const AdminDashboard = ({
           activepaymentmethods: settings.activepaymentmethods || prev.activepaymentmethods || {},
           paymentlinks: settings.paymentlinks || prev.paymentlinks || {},
           categories: settings.categories || prev.categories || [],
-          donationAmounts: settings.donationAmounts || prev.donationAmounts || [1000, 2000, 5000]
+          donationamounts: settings.donationamounts || prev.donationamounts || [1000, 2000, 5000]
         };
       });
     }
@@ -589,7 +590,7 @@ export const AdminDashboard = ({
       alert("Vérifiez l'adresse email de contact.");
       return false;
     }
-    if (!tempSettings.aboutText || tempSettings.aboutText.length < 10) {
+    if (!tempSettings.abouttext || tempSettings.abouttext.length < 10) {
       alert("Le texte 'À propos' doit être rempli (min. 10 caractères).");
       return false;
     }
@@ -758,6 +759,7 @@ export const AdminDashboard = ({
             { id: 'media', label: 'Médias', icon: ImagePlus },
             { id: 'subscribers', label: 'Abonnés', icon: Users },
             { id: 'analytics', label: 'Statistiques', icon: Activity },
+            { id: 'activity-log', label: 'Sécurité & Logs', icon: ShieldCheck },
             { id: 'payments', label: 'Paiements', icon: CreditCard },
             { id: 'settings', label: 'Paramètres', icon: Settings },
           ].map(item => (
@@ -1076,27 +1078,27 @@ export const AdminDashboard = ({
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       <div className="space-y-1">
                         <label className="text-[9px] font-black uppercase text-slate-400 px-1">Facebook</label>
-                        <input type="text" placeholder="Facebook URL" className="w-full bg-slate-50 rounded-xl px-4 py-3 text-sm outline-none border border-slate-100 focus:border-primary/30" value={tempSettings.facebookUrl} onChange={e => setTempSettings({...tempSettings, facebookUrl: e.target.value})} />
+                        <input type="text" placeholder="Facebook URL" className="w-full bg-slate-50 rounded-xl px-4 py-3 text-sm outline-none border border-slate-100 focus:border-primary/30" value={tempSettings.facebookurl} onChange={e => setTempSettings({...tempSettings, facebookurl: e.target.value})} />
                       </div>
                       <div className="space-y-1">
                         <label className="text-[9px] font-black uppercase text-slate-400 px-1">X (Twitter)</label>
-                        <input type="text" placeholder="Twitter URL" className="w-full bg-slate-50 rounded-xl px-4 py-3 text-sm outline-none border border-slate-100 focus:border-primary/30" value={tempSettings.twitterUrl} onChange={e => setTempSettings({...tempSettings, twitterUrl: e.target.value})} />
+                        <input type="text" placeholder="Twitter URL" className="w-full bg-slate-50 rounded-xl px-4 py-3 text-sm outline-none border border-slate-100 focus:border-primary/30" value={tempSettings.twitterurl} onChange={e => setTempSettings({...tempSettings, twitterurl: e.target.value})} />
                       </div>
                       <div className="space-y-1">
                         <label className="text-[9px] font-black uppercase text-slate-400 px-1">Instagram</label>
-                        <input type="text" placeholder="Instagram URL" className="w-full bg-slate-50 rounded-xl px-4 py-3 text-sm outline-none border border-slate-100 focus:border-primary/30" value={tempSettings.instagramUrl} onChange={e => setTempSettings({...tempSettings, instagramUrl: e.target.value})} />
+                        <input type="text" placeholder="Instagram URL" className="w-full bg-slate-50 rounded-xl px-4 py-3 text-sm outline-none border border-slate-100 focus:border-primary/30" value={tempSettings.instagramurl} onChange={e => setTempSettings({...tempSettings, instagramurl: e.target.value})} />
                       </div>
                       <div className="space-y-1">
                         <label className="text-[9px] font-black uppercase text-slate-400 px-1">TikTok</label>
-                        <input type="text" placeholder="TikTok URL" className="w-full bg-slate-50 rounded-xl px-4 py-3 text-sm outline-none border border-slate-100 focus:border-primary/30" value={tempSettings.tiktokUrl} onChange={e => setTempSettings({...tempSettings, tiktokUrl: e.target.value})} />
+                        <input type="text" placeholder="TikTok URL" className="w-full bg-slate-50 rounded-xl px-4 py-3 text-sm outline-none border border-slate-100 focus:border-primary/30" value={tempSettings.tiktokurl} onChange={e => setTempSettings({...tempSettings, tiktokurl: e.target.value})} />
                       </div>
                       <div className="space-y-1">
                         <label className="text-[9px] font-black uppercase text-slate-400 px-1">LinkedIn</label>
-                        <input type="text" placeholder="LinkedIn URL" className="w-full bg-slate-50 rounded-xl px-4 py-3 text-sm outline-none border border-slate-100 focus:border-primary/30" value={tempSettings.linkedinUrl} onChange={e => setTempSettings({...tempSettings, linkedinUrl: e.target.value})} />
+                        <input type="text" placeholder="LinkedIn URL" className="w-full bg-slate-50 rounded-xl px-4 py-3 text-sm outline-none border border-slate-100 focus:border-primary/30" value={tempSettings.linkedinurl} onChange={e => setTempSettings({...tempSettings, linkedinurl: e.target.value})} />
                       </div>
                       <div className="space-y-1">
                         <label className="text-[9px] font-black uppercase text-slate-400 px-1">YouTube</label>
-                        <input type="text" placeholder="YouTube URL" className="w-full bg-slate-50 rounded-xl px-4 py-3 text-sm outline-none border border-slate-100 focus:border-primary/30" value={tempSettings.youtubeUrl} onChange={e => setTempSettings({...tempSettings, youtubeUrl: e.target.value})} />
+                        <input type="text" placeholder="YouTube URL" className="w-full bg-slate-50 rounded-xl px-4 py-3 text-sm outline-none border border-slate-100 focus:border-primary/30" value={tempSettings.youtubeurl} onChange={e => setTempSettings({...tempSettings, youtubeurl: e.target.value})} />
                       </div>
                     </div>
                   </div>
@@ -1192,16 +1194,16 @@ export const AdminDashboard = ({
                 <h3 className="text-xl font-black flex items-center gap-2 text-slate-700"><MonitorOff /> Mode Maintenance</h3>
                 <div className={cn(
                   "flex items-center gap-4 p-4 rounded-2xl border transition-colors",
-                  tempSettings.maintenanceMode ? "bg-slate-100 border-slate-300" : "bg-emerald-50 border-emerald-100"
+                  tempSettings.maintenancemode ? "bg-slate-100 border-slate-300" : "bg-emerald-50 border-emerald-100"
                 )}>
                   <input 
                     type="checkbox" 
-                    checked={tempSettings.maintenanceMode}
-                    onChange={e => setTempSettings({...tempSettings, maintenanceMode: e.target.checked})}
+                    checked={tempSettings.maintenancemode}
+                    onChange={e => setTempSettings({...tempSettings, maintenancemode: e.target.checked})}
                     className="w-6 h-6 accent-slate-900"
                   />
                   <div>
-                    <p className="text-sm font-bold">Le site est {tempSettings.maintenanceMode ? "Hors ligne (Maintenance)" : "En ligne"}</p>
+                    <p className="text-sm font-bold">Le site est {tempSettings.maintenancemode ? "Hors ligne (Maintenance)" : "En ligne"}</p>
                     <p className="text-[10px] text-slate-500">Activez ce mode pour suspendre l'accès public durant des travaux.</p>
                   </div>
                 </div>
@@ -1215,14 +1217,14 @@ export const AdminDashboard = ({
                     <button 
                       type="button"
                       onClick={() => {
-                        const textarea = document.querySelector('textarea[name="aboutText"]') as HTMLTextAreaElement;
+                        const textarea = document.querySelector('textarea[name="abouttext"]') as HTMLTextAreaElement;
                         if (!textarea) return;
                         const start = textarea.selectionStart;
                         const end = textarea.selectionEnd;
                         const text = textarea.value;
                         const selectedText = text.substring(start, end);
                         const newText = text.substring(0, start) + `**${selectedText}**` + text.substring(end);
-                        setTempSettings({...tempSettings, aboutText: newText});
+                        setTempSettings({...tempSettings, abouttext: newText});
                       }}
                       className="p-2 hover:bg-white hover:text-primary rounded-lg transition-all text-slate-500"
                       title="Gras"
@@ -1232,14 +1234,14 @@ export const AdminDashboard = ({
                     <button 
                       type="button"
                       onClick={() => {
-                        const textarea = document.querySelector('textarea[name="aboutText"]') as HTMLTextAreaElement;
+                        const textarea = document.querySelector('textarea[name="abouttext"]') as HTMLTextAreaElement;
                         if (!textarea) return;
                         const start = textarea.selectionStart;
                         const end = textarea.selectionEnd;
                         const text = textarea.value;
                         const selectedText = text.substring(start, end);
                         const newText = text.substring(0, start) + `\n### ${selectedText}` + text.substring(end);
-                        setTempSettings({...tempSettings, aboutText: newText});
+                        setTempSettings({...tempSettings, abouttext: newText});
                       }}
                       className="px-2 py-1 hover:bg-white hover:text-primary rounded-lg transition-all text-slate-500 text-[10px] font-black"
                       title="Titre"
@@ -1249,9 +1251,9 @@ export const AdminDashboard = ({
                   </div>
                 </div>
                 <textarea 
-                  name="aboutText"
-                  value={tempSettings.aboutText}
-                  onChange={e => setTempSettings({...tempSettings, aboutText: e.target.value})}
+                  name="abouttext"
+                  value={tempSettings.abouttext}
+                  onChange={e => setTempSettings({...tempSettings, abouttext: e.target.value})}
                   className="w-full bg-slate-50 rounded-2xl px-6 py-4 text-sm outline-none focus:ring-2 focus:ring-primary/20 min-h-[200px]"
                   placeholder="Décrivez votre journal, sa mission, son équipe..."
                 />
@@ -1261,8 +1263,8 @@ export const AdminDashboard = ({
               <div className="bg-white rounded-3xl border border-slate-100 shadow-xl p-8 space-y-6">
                 <h3 className="text-xl font-black flex items-center gap-2"><Globe /> Emplacements Publicitaires (JSON/HTML)</h3>
                 <div className="grid grid-cols-1 gap-4">
-                  <textarea placeholder="Ad Slot Header" className="bg-slate-100 rounded-xl p-4 text-xs font-mono h-24" value={tempSettings.adSlotHeader} onChange={e => setTempSettings({...tempSettings, adSlotHeader: e.target.value})} />
-                  <textarea placeholder="Ad Slot Sidebar" className="bg-slate-100 rounded-xl p-4 text-xs font-mono h-24" value={tempSettings.adSlotSidebar} onChange={e => setTempSettings({...tempSettings, adSlotSidebar: e.target.value})} />
+                  <textarea placeholder="Ad Slot Header" className="bg-slate-100 rounded-xl p-4 text-xs font-mono h-24" value={tempSettings.adslotheader} onChange={e => setTempSettings({...tempSettings, adslotheader: e.target.value})} />
+                  <textarea placeholder="Ad Slot Sidebar" className="bg-slate-100 rounded-xl p-4 text-xs font-mono h-24" value={tempSettings.adslotsidebar} onChange={e => setTempSettings({...tempSettings, adslotsidebar: e.target.value})} />
                 </div>
               </div>
 
@@ -1375,6 +1377,40 @@ export const AdminDashboard = ({
             </motion.div>
           )}
 
+          {activeTab === 'activity-log' && (
+            <div className="bg-white rounded-3xl border border-slate-100 shadow-xl overflow-hidden">
+               <div className="p-8 border-b border-slate-100 flex justify-between items-center">
+                  <h3 className="font-black text-xl">Journal d'Activité Admin</h3>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold uppercase text-slate-400">Audit Trail</span>
+                  </div>
+               </div>
+               <div className="divide-y divide-slate-100">
+                  {activityLogs.map(log => (
+                    <div key={log.id} className="p-6 hover:bg-slate-50 transition-colors">
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-1">
+                          <p className="font-bold text-slate-900">{log.action}</p>
+                          <p className="text-xs text-slate-500">{typeof log.details === 'string' ? log.details : JSON.stringify(log.details)}</p>
+                          <div className="flex items-center gap-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">
+                             <span>IP: {log.ip_address}</span>
+                             <span>•</span>
+                             <span>ID: {log.admin_id?.substring(0, 8)}...</span>
+                          </div>
+                        </div>
+                        <span className="text-xs font-bold text-slate-400">{safeFormatDateAdmin(log.created_at)}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {activityLogs.length === 0 && (
+                    <div className="p-20 text-center text-slate-400 italic font-medium uppercase tracking-widest text-xs">
+                       Aucun log d'activité récent
+                    </div>
+                  )}
+               </div>
+            </div>
+          )}
+
           {activeTab === 'payments' && (
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
@@ -1468,19 +1504,19 @@ export const AdminDashboard = ({
                                         placeholder="Ex: 07 00 00 00 00"
                                         className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-4 py-3 text-xs font-bold outline-none focus:border-primary transition-all"
                                         value={(() => {
-                                          if (key === 'orangeMoney') return tempSettings.orangeMoneyNumber || '';
-                                          if (key === 'mtn') return tempSettings.mtnMoneyNumber || '';
-                                          if (key === 'moov') return tempSettings.moovMoneyNumber || '';
-                                          if (key === 'wave') return tempSettings.waveNumber || '';
+                                          if (key === 'orangeMoney') return tempSettings.orangemoneynumber || '';
+                                          if (key === 'mtn') return tempSettings.mtnmoneynumber || '';
+                                          if (key === 'moov') return tempSettings.moovmoneynumber || '';
+                                          if (key === 'wave') return tempSettings.wavenumber || '';
                                           return '';
                                         })()}
                                         onChange={e => {
                                           const val = e.target.value;
                                           const update: any = {};
-                                          if (key === 'orangeMoney') update.orangeMoneyNumber = val;
-                                          else if (key === 'mtn') update.mtnMoneyNumber = val;
-                                          else if (key === 'moov') update.moovMoneyNumber = val;
-                                          else if (key === 'wave') update.waveNumber = val;
+                                          if (key === 'orangeMoney') update.orangemoneynumber = val;
+                                          else if (key === 'mtn') update.mtnmoneynumber = val;
+                                          else if (key === 'moov') update.moovmoneynumber = val;
+                                          else if (key === 'wave') update.wavenumber = val;
                                           setTempSettings({...tempSettings, ...update});
                                         }}
                                       />
@@ -1519,12 +1555,12 @@ export const AdminDashboard = ({
                         <div className="space-y-3 pt-4">
                           <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Montants suggérés (XOF)</label>
                           <div className="flex flex-wrap gap-3">
-                            {tempSettings?.donationAmounts?.map((amt, idx) => (
+                            {tempSettings?.donationamounts?.map((amt, idx) => (
                               <div key={idx} className="flex items-center gap-3 bg-white border border-slate-200 pl-4 pr-2 py-2 rounded-2xl shadow-sm">
                                 <span className="font-black text-sm">{amt?.toLocaleString()}</span>
                                 <button 
                                   type="button"
-                                  onClick={() => setTempSettings({...tempSettings, donationAmounts: (tempSettings.donationAmounts || []).filter((_, i) => i !== idx)})}
+                                  onClick={() => setTempSettings({...tempSettings, donationamounts: (tempSettings.donationamounts || []).filter((_, i) => i !== idx)})}
                                   className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition-all"
                                 >
                                   <X size={14} />
@@ -1541,7 +1577,7 @@ export const AdminDashboard = ({
                                   if (e.key === 'Enter') {
                                     const val = parseInt((e.target as HTMLInputElement).value);
                                     if (!isNaN(val)) {
-                                      setTempSettings({...tempSettings, donationAmounts: [...(tempSettings.donationAmounts || []), val].sort((a,b) => a-b)});
+                                      setTempSettings({...tempSettings, donationamounts: [...(tempSettings.donationamounts || []), val].sort((a,b) => a-b)});
                                       (e.target as HTMLInputElement).value = '';
                                     }
                                   }
@@ -1581,8 +1617,8 @@ export const AdminDashboard = ({
                                 <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-primary" size={24} />
                                 <input 
                                   type="number"
-                                  value={tempSettings.premiumPrice}
-                                  onChange={e => setTempSettings({...tempSettings, premiumPrice: parseInt(e.target.value) || 0})}
+                                  value={tempSettings.premiumprice}
+                                  onChange={e => setTempSettings({...tempSettings, premiumprice: parseInt(e.target.value) || 0})}
                                   className="w-full bg-white/5 border-2 border-white/10 rounded-2xl pl-14 pr-6 py-4 text-2xl font-black outline-none focus:border-primary transition-all"
                                 />
                               </div>
@@ -1590,8 +1626,8 @@ export const AdminDashboard = ({
                             <div className="space-y-2">
                               <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Durée (Mois)</label>
                               <select 
-                                value={tempSettings.premiumduration || 1}
-                                onChange={e => setTempSettings({...tempSettings, premiumduration: parseInt(e.target.value)})}
+                                value={tempSettings.premiumdurationmonths || 1}
+                                onChange={e => setTempSettings({...tempSettings, premiumdurationmonths: parseInt(e.target.value)})}
                                 className="w-full bg-white/5 border-2 border-white/10 rounded-2xl px-6 py-4 text-xl font-black outline-none focus:border-primary transition-all appearance-none"
                               >
                                 {[1, 3, 6, 12].map(m => <option key={m} value={m} className="bg-slate-800">{m} {m === 1 ? 'Mois' : 'Mois'}</option>)}
@@ -2602,7 +2638,7 @@ export const CulturePostEditor = ({ post, onSave, onCancel }: { post: Partial<Cu
               onChange={(e) => setFormData({...formData, category: e.target.value as any})}
               className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 text-sm font-bold outline-none"
             >
-              <option value="tradition">Tradition</option>
+              <option value="traditions">Traditions</option>
               <option value="patrimoine">Patrimoine</option>
               <option value="gastronomie">Gastronomie</option>
               <option value="art">Art & Artisanat</option>

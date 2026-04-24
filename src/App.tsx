@@ -78,7 +78,7 @@ import ReactMarkdown from 'react-markdown';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { MOCK_ARTICLES, MOCK_EVENTS, MOCK_AUTHORS, MOCK_CULTURE } from './constants';
-import { Article, Comment, Event, SiteSettings, Subscriber, MediaAsset, Poll, Classified, LiveBlog, AppNotification, SupportMessage, Author, WebTV, CulturePost } from './types';
+import { Article, Comment, Event, SiteSettings, Subscriber, MediaAsset, Poll, Classified, LiveBlog, AppNotification, SupportMessage, Author, WebTV, CulturePost, AdminActivityLog } from './types';
 import { cn, optimizeImage, getYoutubeId, safeFormatDate } from './lib/utils';
 import { AdminLogin, AdminDashboard, AdminEditor, ExportModal, PollEditor, LiveBlogEditor, WebTVEditor, ClassifiedEditor, CulturePostEditor } from './components/Admin';
 import { PulseSidebar } from './components/PulseSidebar';
@@ -2285,25 +2285,25 @@ export default function App() {
   
   const [activeNotification, setActiveNotification] = useState<string | {message: string, type: 'success' | 'urgent' | 'info'} | null>(null);
   const [siteSettings, setSiteSettings] = useState<SiteSettings>({
-    aboutText: "Akwaba Info est votre source de référence pour l'actualité en Afrique et dans le monde.",
+    abouttext: "Akwaba Info est votre source de référence pour l'actualité en Afrique et dans le monde.",
     email: "contact@akwabainfo.com",
     phone: "+225 00 00 00 00",
     address: "Abidjan, Côte d'Ivoire",
-    facebookUrl: "https://facebook.com",
-    twitterUrl: "https://twitter.com",
-    instagramUrl: "https://instagram.com",
-    tiktokUrl: "https://tiktok.com",
-    linkedinUrl: "https://linkedin.com",
-    youtubeUrl: "https://youtube.com",
+    facebookurl: "https://facebook.com",
+    twitterurl: "https://twitter.com",
+    instagramurl: "https://instagram.com",
+    tiktokurl: "https://tiktok.com",
+    linkedinurl: "https://linkedin.com",
+    youtubeurl: "https://youtube.com",
     categories: ['À la une', 'Urgent', 'Politique', 'Économie', 'Science', 'Santé', 'Culture', 'Sport', 'Afrique', 'Monde', 'Tech'],
-    maintenanceMode: false,
+    maintenancemode: false,
     urgentbanneractive: false,
     urgentbannertext: "",
     flashnews: "Côte d'Ivoire : Lancement d'un nouveau programme de soutien aux startups technologiques à Abidjan.;Économie : La ZLECAf annonce une progression record des échanges intra-africains pour le premier trimestre.;Sport : Les préparatifs de la prochaine CAN avancent à grands pas, inspection des stades terminée.;Culture : Le festival des musiques urbaines d'Anoumabo (FEMUA) dévoile sa programmation internationale.;Monde : Sommet extraordinaire de l'Union Africaine sur la sécurité alimentaire prévu le mois prochain.",
     // Donations & Premium
-    donationAmounts: [5000, 10000, 25000],
-    donationPaymentMethods: ['PayPal', 'Orange Money', 'Wave', 'MTN', 'Moov', 'Stripe', 'Flutterwave'],
-    premiumPrice: 5000,
+    donationamounts: [5000, 10000, 25000],
+    donationpaymentmethods: ['PayPal', 'Orange Money', 'Wave', 'MTN', 'Moov', 'Stripe', 'Flutterwave'],
+    premiumprice: 5000,
     isdonationactive: true,
     ispremiumactive: true,
     activepaymentmethods: {
@@ -2324,14 +2324,15 @@ export default function App() {
       moov: "",
       wave: ""
     },
-    orangeMoneyNumber: "0707070707",
-    mtnMoneyNumber: "0505050505",
-    moovMoneyNumber: "0101010101",
-    waveNumber: "0708091011",
-    premiumduration: 1
+    orangemoneynumber: "0707070707",
+    mtnmoneynumber: "0505050505",
+    moovmoneynumber: "0101010101",
+    wavenumber: "0708091011",
+    premiumdurationmonths: 1
   });
   const [allComments, setAllComments] = useState<Comment[]>([]);
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
+  const [adminLogs, setAdminLogs] = useState<AdminActivityLog[]>([]);
 
   useEffect(() => {
     // Pick first active payment method as default for donation view
@@ -2451,6 +2452,7 @@ export default function App() {
           console.error("Erreur stats:", err);
           setAdminStats({ error: true });
         });
+      SupabaseService.getAdminActivityLog().then(setAdminLogs).catch(console.error);
     }
   }, [isAdminAuthenticated]);
 
@@ -2754,9 +2756,9 @@ export default function App() {
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment_success') === 'true') {
       const method = params.get('method') || 'unknown';
-      const amount = parseInt(params.get('amount') || '0') || siteSettings.premiumPrice;
+      const amount = parseInt(params.get('amount') || '0') || siteSettings.premiumprice;
 
-      SupabaseService.upgradeToPremium(currentUser.uid, method, siteSettings.premiumduration || 1)
+      SupabaseService.upgradeToPremium(currentUser.uid, method, siteSettings.premiumdurationmonths || 1)
         .then(() => {
           // Record the transaction for history
           SupabaseService.recordTransaction(
@@ -3139,7 +3141,7 @@ export default function App() {
 
   const handleValidateTransaction = async (tid: string, uid: string) => {
     try {
-      await SupabaseService.validatePremiumTransaction(tid, uid, siteSettings.premiumduration || 1);
+      await SupabaseService.validatePremiumTransaction(tid, uid, siteSettings.premiumdurationmonths || 1);
       setActiveNotification({ 
         message: "Transaction validée ! L'utilisateur a maintenant accès au contenu Premium.", 
         type: 'success' 
@@ -3224,7 +3226,7 @@ export default function App() {
       return;
     }
     
-    await handleConfirmPayment(siteSettings.premiumPrice, method, 'subscription', transId);
+    await handleConfirmPayment(siteSettings.premiumprice, method, 'subscription', transId);
     setShowPremiumModal(false);
   };
 
@@ -3827,7 +3829,7 @@ export default function App() {
       .slice(0, 8);
   }, [currentUser, userFollowedCategories, visibleArticles]);
 
-  if (siteSettings.maintenanceMode && !isAdminAuthenticated && currentView !== 'admin') {
+  if (siteSettings.maintenancemode && !isAdminAuthenticated && currentView !== 'admin') {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8 text-center space-y-6">
         <MonitorOff size={64} className="text-slate-300 animate-pulse" />
@@ -4828,7 +4830,7 @@ export default function App() {
                                >
                                  S'ABONNER POUR LIRE LA SUITE
                                </button>
-                               <div className="pt-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Akwaba Premium • {siteSettings?.premiumPrice || 5000} XOF / mois</div>
+                               <div className="pt-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Akwaba Premium • {siteSettings?.premiumprice || 5000} XOF / mois</div>
                             </div>
                           </div>
                         );
@@ -5062,11 +5064,6 @@ export default function App() {
                                   </div>
                                 </div>
                               </motion.div>
-                              {comment.replies && comment.replies.length > 0 && (
-                                <div className="border-l-2 border-slate-50">
-                                  {renderComments(comment.replies, true)}
-                                </div>
-                              )}
                             </div>
                           ));
                         };
@@ -5415,7 +5412,7 @@ export default function App() {
                     <div className="space-y-4">
                       <h4 className="font-bold text-sm">Choisissez un montant</h4>
                       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                        {siteSettings.donationAmounts?.map(amount => (
+                        {siteSettings.donationamounts?.map(amount => (
                           <button 
                             key={amount} 
                             onClick={() => setSelectedAmount(amount.toString())}
@@ -5475,10 +5472,10 @@ export default function App() {
                                       case 'paypal': return siteSettings.paymentlinks?.paypal;
                                       case 'stripe': return siteSettings.paymentlinks?.stripe;
                                       case 'flutterwave': return siteSettings.paymentlinks?.flutterwave;
-                                      case 'orangeMoney': return siteSettings.orangeMoneyNumber ? `Transfert au ${siteSettings.orangeMoneyNumber}` : null;
-                                      case 'wave': return siteSettings.waveNumber ? `Transfert au ${siteSettings.waveNumber}` : null;
-                                      case 'mtn': return siteSettings.mtnMoneyNumber ? `Transfert au ${siteSettings.mtnMoneyNumber}` : null;
-                                      case 'moov': return siteSettings.moovMoneyNumber ? `Transfert au ${siteSettings.moovMoneyNumber}` : null;
+                                      case 'orangeMoney': return siteSettings.orangemoneynumber ? `Transfert au ${siteSettings.orangemoneynumber}` : null;
+                                      case 'wave': return siteSettings.wavenumber ? `Transfert au ${siteSettings.wavenumber}` : null;
+                                      case 'mtn': return siteSettings.mtnmoneynumber ? `Transfert au ${siteSettings.mtnmoneynumber}` : null;
+                                      case 'moov': return siteSettings.moovmoneynumber ? `Transfert au ${siteSettings.moovmoneynumber}` : null;
                                       default: return siteSettings.paymentlinks?.[selectedPayment as keyof typeof siteSettings.paymentlinks] || "Instructions manuelles";
                                     }
                                   })();
@@ -5588,7 +5585,7 @@ export default function App() {
               <h2 className="text-4xl font-black">À propos d'Akwaba Info</h2>
               <div className="markdown-body space-y-6">
                 <ReactMarkdown>
-                  {siteSettings.aboutText || "Akwaba Info est votre source de référence pour l'actualité en Afrique et dans le monde."}
+                  {siteSettings.abouttext || "Akwaba Info est votre source de référence pour l'actualité en Afrique et dans le monde."}
                 </ReactMarkdown>
               </div>
             </motion.div>
@@ -6018,6 +6015,7 @@ Dernière mise à jour : Avril 2026
                   setActiveNotification={setActiveNotification}
                   stats={adminStats}
                   currentUser={currentUser}
+                  activityLogs={adminLogs}
                 />
               )
             ) : (
@@ -6061,38 +6059,38 @@ Dernière mise à jour : Avril 2026
               </h2>
             </div>
             <p className="text-sm text-slate-500 leading-relaxed">
-              {(siteSettings.aboutText || "").length > 200 
-                ? `${siteSettings.aboutText?.substring(0, 197)}...` 
-                : siteSettings.aboutText}
+              {(siteSettings.abouttext || "").length > 200 
+                ? `${siteSettings.abouttext?.substring(0, 197)}...` 
+                : siteSettings.abouttext}
             </p>
               <div className="flex gap-4">
-                {siteSettings.twitterUrl && (
-                  <a href={siteSettings.twitterUrl} target="_blank" rel="noopener noreferrer" className="p-2 bg-slate-100 rounded-full text-slate-600 hover:bg-primary hover:text-white transition-all">
+                {siteSettings.twitterurl && (
+                  <a href={siteSettings.twitterurl} target="_blank" rel="noopener noreferrer" className="p-2 bg-slate-100 rounded-full text-slate-600 hover:bg-primary hover:text-white transition-all">
                     <Twitter size={20} />
                   </a>
                 )}
-                {siteSettings.facebookUrl && (
-                  <a href={siteSettings.facebookUrl} target="_blank" rel="noopener noreferrer" className="p-2 bg-slate-100 rounded-full text-slate-600 hover:bg-primary hover:text-white transition-all">
+                {siteSettings.facebookurl && (
+                  <a href={siteSettings.facebookurl} target="_blank" rel="noopener noreferrer" className="p-2 bg-slate-100 rounded-full text-slate-600 hover:bg-primary hover:text-white transition-all">
                     <Facebook size={20} />
                   </a>
                 )}
-                {siteSettings.instagramUrl && (
-                  <a href={siteSettings.instagramUrl} target="_blank" rel="noopener noreferrer" className="p-2 bg-slate-100 rounded-full text-slate-600 hover:bg-primary hover:text-white transition-all">
+                {siteSettings.instagramurl && (
+                  <a href={siteSettings.instagramurl} target="_blank" rel="noopener noreferrer" className="p-2 bg-slate-100 rounded-full text-slate-600 hover:bg-primary hover:text-white transition-all">
                     <Instagram size={20} />
                   </a>
                 )}
-                {siteSettings.tiktokUrl && (
-                  <a href={siteSettings.tiktokUrl} target="_blank" rel="noopener noreferrer" className="p-2 bg-slate-100 rounded-full text-slate-600 hover:bg-primary hover:text-white transition-all">
+                {siteSettings.tiktokurl && (
+                  <a href={siteSettings.tiktokurl} target="_blank" rel="noopener noreferrer" className="p-2 bg-slate-100 rounded-full text-slate-600 hover:bg-primary hover:text-white transition-all">
                     <Music size={20} />
                   </a>
                 )}
-                {siteSettings.linkedinUrl && (
-                  <a href={siteSettings.linkedinUrl} target="_blank" rel="noopener noreferrer" className="p-2 bg-slate-100 rounded-full text-slate-600 hover:bg-primary hover:text-white transition-all">
+                {siteSettings.linkedinurl && (
+                  <a href={siteSettings.linkedinurl} target="_blank" rel="noopener noreferrer" className="p-2 bg-slate-100 rounded-full text-slate-600 hover:bg-primary hover:text-white transition-all">
                     <Linkedin size={20} />
                   </a>
                 )}
-                {siteSettings.youtubeUrl && (
-                  <a href={siteSettings.youtubeUrl} target="_blank" rel="noopener noreferrer" className="p-2 bg-slate-100 rounded-full text-slate-600 hover:bg-primary hover:text-white transition-all">
+                {siteSettings.youtubeurl && (
+                  <a href={siteSettings.youtubeurl} target="_blank" rel="noopener noreferrer" className="p-2 bg-slate-100 rounded-full text-slate-600 hover:bg-primary hover:text-white transition-all">
                     <Youtube size={20} />
                   </a>
                 )}
@@ -6214,7 +6212,7 @@ Dernière mise à jour : Avril 2026
               setPaymentInitiated(false);
             }} 
             onUpgrade={handleUpgradePremium}
-            price={siteSettings.premiumPrice}
+            price={siteSettings.premiumprice}
             activeMethods={siteSettings.activepaymentmethods}
             settings={siteSettings}
             getPaymentIcon={getPaymentIcon}
@@ -6250,13 +6248,13 @@ const PremiumModal = ({ onClose, onUpgrade, price, activeMethods, settings, getP
 
   const getPaymentDetails = (method: string) => {
     switch(method) {
-      case 'paypal': return settings.paymentlinks?.paypal || (settings.paypalId ? `ID: ${settings.paypalId}` : null);
-      case 'stripe': return settings.paymentlinks?.stripe || (settings.stripePublicKey ? "Paiement par Carte" : null);
+      case 'paypal': return settings.paymentlinks?.paypal || (settings.paypalid ? `ID: ${settings.paypalid}` : null);
+      case 'stripe': return settings.paymentlinks?.stripe || (settings.stripepublickey ? "Paiement par Carte" : null);
       case 'flutterwave': return settings.paymentlinks?.flutterwave || "Paiement via Flutterwave";
-      case 'orangeMoney': return settings.orangeMoneyNumber ? `Transfert au ${settings.orangeMoneyNumber}` : null;
-      case 'wave': return settings.waveNumber ? `Transfert au ${settings.waveNumber}` : null;
-      case 'mtn': return settings.mtnMoneyNumber ? `Transfert au ${settings.mtnMoneyNumber}` : null;
-      case 'moov': return settings.moovMoneyNumber ? `Transfert au ${settings.moovMoneyNumber}` : null;
+      case 'orangeMoney': return settings.orangemoneynumber ? `Transfert au ${settings.orangemoneynumber}` : null;
+      case 'wave': return settings.wavenumber ? `Transfert au ${settings.wavenumber}` : null;
+      case 'mtn': return settings.mtnmoneynumber ? `Transfert au ${settings.mtnmoneynumber}` : null;
+      case 'moov': return settings.moovmoneynumber ? `Transfert au ${settings.moovmoneynumber}` : null;
       default: return settings.paymentlinks?.[method as keyof typeof settings.paymentlinks] || null;
     }
   };

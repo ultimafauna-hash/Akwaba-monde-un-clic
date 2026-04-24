@@ -57,31 +57,9 @@ export const SupabaseService = {
       return;
     }
 
-    // Clean up dates to ensure they are ASCII and valid for PG
-    const cleanArticle = { ...article };
-    const sanitizeDate = (d: any) => {
-      if (!d) return null;
-      if (typeof d !== 'string') return d;
-      // Convert Arabic-Indic digits to ASCII
-      let s = d.replace(/[٠-٩]/g, (digit) => (digit.charCodeAt(0) - 1632).toString())
-               .replace(/[۰-۹]/g, (digit) => (digit.charCodeAt(0) - 1776).toString());
-      // Ensure it can be parsed as a date, fallback to null if too weird
-      const dateTest = new Date(s);
-      return isNaN(dateTest.getTime()) ? null : dateTest.toISOString();
-    };
-
-    if (cleanArticle.date) cleanArticle.date = sanitizeDate(cleanArticle.date) || new Date().toISOString();
-    if (cleanArticle.scheduledat) cleanArticle.scheduledat = sanitizeDate(cleanArticle.scheduledat);
-
-    // Ensure all keys are lowercase for Postgres
-    const finalArticle: any = {};
-    Object.entries(cleanArticle).forEach(([key, value]) => {
-      finalArticle[key.toLowerCase()] = value;
-    });
-
     const { error } = await supabase
       .from('articles')
-      .upsert(finalArticle);
+      .upsert(article);
     
     if (error) throw error;
   },
@@ -96,28 +74,9 @@ export const SupabaseService = {
       return;
     }
 
-    // Clean up dates
-    const cleanEvent = { ...event };
-    const sanitizeDate = (d: any) => {
-      if (!d) return null;
-      if (typeof d !== 'string') return d;
-      let s = d.replace(/[٠-٩]/g, (digit) => (digit.charCodeAt(0) - 1632).toString())
-               .replace(/[۰-۹]/g, (digit) => (digit.charCodeAt(0) - 1776).toString());
-      const dateTest = new Date(s);
-      return isNaN(dateTest.getTime()) ? null : dateTest.toISOString();
-    };
-
-    if (cleanEvent.scheduledat) cleanEvent.scheduledat = sanitizeDate(cleanEvent.scheduledat);
-
-    // Ensure all keys are lowercase
-    const finalEvent: any = {};
-    Object.entries(cleanEvent).forEach(([key, value]) => {
-      finalEvent[key.toLowerCase()] = value;
-    });
-
     const { error } = await supabase
       .from('events')
-      .upsert(finalEvent);
+      .upsert(event);
     if (error) throw error;
   },
 
@@ -168,20 +127,16 @@ export const SupabaseService = {
 
   async saveSettings(settings: SiteSettings): Promise<void> {
     if (isPlaceholder) return;
-    const finalSettings: any = {};
-    Object.entries(settings).forEach(([key, value]) => {
-      finalSettings[key.toLowerCase()] = value;
-    });
     const { error } = await supabase
       .from('settings')
-      .upsert({ ...finalSettings, id: 'global' });
+      .upsert({ ...settings, id: 'global' });
     if (error) throw error;
   },
 
   async addToReadingHistory(userId: string, articleId: string): Promise<void> {
     if (isPlaceholder) return;
     const { data: profile } = await supabase
-      .from('user_profiles')
+      .from('profiles')
       .select('history')
       .eq('uid', userId)
       .single();

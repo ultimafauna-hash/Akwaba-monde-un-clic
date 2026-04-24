@@ -1,114 +1,98 @@
-/*
-  RECOMMANDATIONS DE SÉCURITÉ SUPABASE RLS - AKWABA INFO
-  
-  Copiez et exécutez ces scripts dans l'éditeur SQL de votre tableau de bord Supabase 
-  pour sécuriser vos données selon l'audit effectué.
-*/
+-- SÉCURITÉ SUPABASE RLS SYNCHRONISÉE - AKWABA INFO
+-- Tous les accès sont basés sur le schéma lowercase.
 
--- 1. ACTIVER RLS SUR TOUTES LES TABLES
-ALTER TABLE IF EXISTS articles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS events ENABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS categories ENABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS comments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS subscribers ENABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS media ENABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS settings ENABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS polls ENABLE ROW LEVEL SECURITY;
-ALTER TABLE IF EXISTS transactions ENABLE ROW LEVEL SECURITY;
+-- 1. CONFIGURATION GLOBALE
+-- (Les tables ont déjà RLS activé dans init si possible, mais on le force ici pour être sûr)
+DO $$ 
+DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP
+        EXECUTE 'ALTER TABLE public.' || quote_ident(r.tablename) || ' ENABLE ROW LEVEL SECURITY;';
+    END LOOP;
+END $$;
 
--- 2. POLITIQUES POUR LES ARTICLES (Lecture publique, Modification par l'admin uniquement)
-CREATE POLICY "Lecture publique des articles publiés" ON articles
-  FOR SELECT USING (status = 'published');
+-- 2. POLITIQUES : ARTICLES (Public: Lecture seule, Admin: Tout)
+DROP POLICY IF EXISTS "Articles: lecture publique" ON public.articles;
+CREATE POLICY "Articles: lecture publique" ON public.articles FOR SELECT USING (status = 'published');
 
-CREATE POLICY "Admin a tous les accès sur les articles" ON articles
-  FOR ALL TO authenticated
-  USING (auth.jwt() ->> 'email' = 'akwabanewsinfo@gmail.com');
+DROP POLICY IF EXISTS "Articles: admin full access" ON public.articles;
+CREATE POLICY "Articles: admin full access" ON public.articles FOR ALL TO authenticated USING (auth.jwt() ->> 'email' = 'akwabanewsinfo@gmail.com');
 
--- 3. POLITIQUES POUR LES PROFILS (Lecture/Modification par le propriétaire, Admin peut tout voir)
-CREATE POLICY "Utilisateurs peuvent voir leur propre profil" ON profiles
-  FOR SELECT USING (auth.uid() = id);
+-- 3. POLITIQUES : PROFILS (Utilisateur: Soi-même, Admin: Tout)
+DROP POLICY IF EXISTS "Profiles: lecture/modif par soi" ON public.profiles;
+CREATE POLICY "Profiles: lecture/modif par soi" ON public.profiles FOR ALL USING (auth.uid() = uid);
 
-CREATE POLICY "Utilisateurs peuvent modifier leur propre profil" ON profiles
-  FOR UPDATE USING (auth.uid() = id);
+DROP POLICY IF EXISTS "Profiles: admin full access" ON public.profiles;
+CREATE POLICY "Profiles: admin full access" ON public.profiles FOR ALL TO authenticated USING (auth.jwt() ->> 'email' = 'akwabanewsinfo@gmail.com');
 
-CREATE POLICY "Admin peut voir tous les profils" ON profiles
-  FOR SELECT TO authenticated
-  USING (auth.jwt() ->> 'email' = 'akwabanewsinfo@gmail.com');
+-- 4. POLITIQUES : HISTOIRE & CULTURE (Public: Lecture seule, Admin: Tout)
+DROP POLICY IF EXISTS "Culture: lecture publique" ON public.culture_posts;
+CREATE POLICY "Culture: lecture publique" ON public.culture_posts FOR SELECT USING (status = 'published');
 
--- 4. POLITIQUES POUR LES TRANSACTIONS (Lecture par l'utilisateur et l'admin, Insertion par l'utilisateur)
-CREATE POLICY "Utilisateurs voient leurs propres transactions" ON transactions
-  FOR SELECT USING (auth.uid() = "userId");
+DROP POLICY IF EXISTS "Culture: admin full access" ON public.culture_posts;
+CREATE POLICY "Culture: admin full access" ON public.culture_posts FOR ALL TO authenticated USING (auth.jwt() ->> 'email' = 'akwabanewsinfo@gmail.com');
 
-CREATE POLICY "Admin voit toutes les transactions" ON transactions
-  FOR SELECT TO authenticated
-  USING (auth.jwt() ->> 'email' = 'akwabanewsinfo@gmail.com');
+-- 5. POLITIQUES : COMMENTAIRES (Public: Lecture, Connectés: Insertion)
+DROP POLICY IF EXISTS "Comments: lecture publique" ON public.comments;
+CREATE POLICY "Comments: lecture publique" ON public.comments FOR SELECT USING (true);
 
-CREATE POLICY "Système/Utilisateur peut insérer une transaction" ON transactions
-  FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Comments: insertion connectés" ON public.comments;
+CREATE POLICY "Comments: insertion connectés" ON public.comments FOR INSERT TO authenticated WITH CHECK (auth.uid() = userid);
 
--- 5. POLITIQUES POUR LES COMMENTAIRES (Lecture publique, Insertion par les connectés)
-CREATE POLICY "Lecture publique des commentaires" ON comments
-  FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Comments: admin full access" ON public.comments;
+CREATE POLICY "Comments: admin full access" ON public.comments FOR ALL TO authenticated USING (auth.jwt() ->> 'email' = 'akwabanewsinfo@gmail.com');
 
-CREATE POLICY "Insertion de commentaires par les utilisateurs connectés" ON comments
-  FOR INSERT TO authenticated
-  WITH CHECK (auth.uid() = "userId" OR true);
+-- 6. POLITIQUES : PARAMÈTRES (Public: Lecture, Admin: Tout)
+DROP POLICY IF EXISTS "Settings: lecture publique" ON public.settings;
+CREATE POLICY "Settings: lecture publique" ON public.settings FOR SELECT USING (true);
 
--- 6. POLITIQUES POUR LES ABONNÉS NEWSLETTER
-CREATE POLICY "Public can subscribe" ON subscribers
-  FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Settings: admin full access" ON public.settings;
+CREATE POLICY "Settings: admin full access" ON public.settings FOR ALL TO authenticated USING (auth.jwt() ->> 'email' = 'akwabanewsinfo@gmail.com');
 
-CREATE POLICY "Admin can view and delete subscribers" ON subscribers
-  FOR ALL TO authenticated
-  USING (auth.jwt() ->> 'email' = 'akwabanewsinfo@gmail.com');
+-- 7. POLITIQUES : TRANSACTIONS (Utilisateur: Soi, Admin: Tout)
+DROP POLICY IF EXISTS "Transactions: lecture propre" ON public.transactions;
+CREATE POLICY "Transactions: lecture propre" ON public.transactions FOR SELECT USING (auth.uid() = userid);
 
--- 7. POLITIQUES POUR LES ÉVÉNEMENTS
-CREATE POLICY "Lecture publique des événements" ON events
-  FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Transactions: insertion publique" ON public.transactions;
+CREATE POLICY "Transactions: insertion publique" ON public.transactions FOR INSERT WITH CHECK (true);
 
-CREATE POLICY "Admin a tous les accès sur les événements" ON events
-  FOR ALL TO authenticated
-  USING (auth.jwt() ->> 'email' = 'akwabanewsinfo@gmail.com');
+DROP POLICY IF EXISTS "Transactions: admin full access" ON public.transactions;
+CREATE POLICY "Transactions: admin full access" ON public.transactions FOR ALL TO authenticated USING (auth.jwt() ->> 'email' = 'akwabanewsinfo@gmail.com');
 
--- 8. POLITIQUES POUR LES LIVE BLOGS
-CREATE POLICY "Lecture publique des live blogs" ON live_blogs
-  FOR SELECT USING (true);
+-- 8. POLITIQUES : LIVE BLOGS & WEB TV (Public: Lecture, Admin: Tout)
+DROP POLICY IF EXISTS "LiveBlogs: lecture publique" ON public.live_blogs;
+CREATE POLICY "LiveBlogs: lecture publique" ON public.live_blogs FOR SELECT USING (true);
 
-CREATE POLICY "Admin a tous les accès sur les live blogs" ON live_blogs
-  FOR ALL TO authenticated
-  USING (auth.jwt() ->> 'email' = 'akwabanewsinfo@gmail.com');
+DROP POLICY IF EXISTS "WebTV: lecture publique" ON public.web_tv;
+CREATE POLICY "WebTV: lecture publique" ON public.web_tv FOR SELECT USING (true);
 
--- 9. POLITIQUES POUR LES WEB TV
-CREATE POLICY "Lecture publique web_tv" ON web_tv
-  FOR SELECT USING (true);
+DROP POLICY IF EXISTS "LiveBlogs: admin full access" ON public.live_blogs;
+CREATE POLICY "LiveBlogs: admin full access" ON public.live_blogs FOR ALL TO authenticated USING (auth.jwt() ->> 'email' = 'akwabanewsinfo@gmail.com');
 
-CREATE POLICY "Admin a tous les accès sur web_tv" ON web_tv
-  FOR ALL TO authenticated
-  USING (auth.jwt() ->> 'email' = 'akwabanewsinfo@gmail.com');
+DROP POLICY IF EXISTS "WebTV: admin full access" ON public.web_tv;
+CREATE POLICY "WebTV: admin full access" ON public.web_tv FOR ALL TO authenticated USING (auth.jwt() ->> 'email' = 'akwabanewsinfo@gmail.com');
 
--- 10. POLITIQUES POUR LES SONDAGES
-CREATE POLICY "Lecture publique des sondages" ON polls
-  FOR SELECT USING (true);
+-- 9. POLITIQUES : ADMIN LOGS (Admin uniquement)
+DROP POLICY IF EXISTS "AdminLogs: admin only" ON public.admin_activity_log;
+CREATE POLICY "AdminLogs: admin only" ON public.admin_activity_log FOR ALL TO authenticated USING (auth.jwt() ->> 'email' = 'akwabanewsinfo@gmail.com');
 
-CREATE POLICY "Admin a tous les accès sur les sondages" ON polls
-  FOR ALL TO authenticated
-  USING (auth.jwt() ->> 'email' = 'akwabanewsinfo@gmail.com');
+-- 10. POLITIQUES : ABONNÉS NEWSLETTER (Public: Insertion, Admin: Tout)
+DROP POLICY IF EXISTS "Subscribers: insertion publique" ON public.subscribers;
+CREATE POLICY "Subscribers: insertion publique" ON public.subscribers FOR INSERT WITH CHECK (true);
 
--- 11. POLITIQUES POUR LES MÉDIAS
-CREATE POLICY "Lecture publique des médias" ON media
-  FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Subscribers: admin full access" ON public.subscribers;
+CREATE POLICY "Subscribers: admin full access" ON public.subscribers FOR ALL TO authenticated USING (auth.jwt() ->> 'email' = 'akwabanewsinfo@gmail.com');
 
-CREATE POLICY "Admin a tous les accès sur les médias" ON media
-  FOR ALL TO authenticated
-  USING (auth.jwt() ->> 'email' = 'akwabanewsinfo@gmail.com');
+-- 11. POLITIQUES : NOTIFICATIONS (Utilisateur/Global: Lecture)
+DROP POLICY IF EXISTS "Notifications: lecture propre ou globale" ON public.notifications;
+CREATE POLICY "Notifications: lecture propre ou globale" ON public.notifications FOR SELECT USING (userid = 'global' OR userid = auth.uid()::text);
 
--- 12. SÉCURISER LES PARAMÈTRES DU SITE (Lecture publique, Modification ADMIN uniquement)
-CREATE POLICY "Lecture publique des settings" ON settings
-  FOR SELECT USING (true);
+-- 12. POLITIQUES : MÉDIAS (Public: Lecture, Admin: Tout)
+DROP POLICY IF EXISTS "Media: lecture publique" ON public.media;
+CREATE POLICY "Media: lecture publique" ON public.media FOR SELECT USING (true);
 
-CREATE POLICY "Seul l'admin peut modifier les settings" ON settings
-  FOR ALL TO authenticated
-  USING (auth.jwt() ->> 'email' = 'akwabanewsinfo@gmail.com');
+DROP POLICY IF EXISTS "Media: admin full access" ON public.media;
+CREATE POLICY "Media: admin full access" ON public.media FOR ALL TO authenticated USING (auth.jwt() ->> 'email' = 'akwabanewsinfo@gmail.com');
 
--- NOTE : Remplacez 'akwabanewsinfo@gmail.com' par l'email de l'administrateur réel.
+-- NOTE : 'akwabanewsinfo@gmail.com' est l'email administrateur de référence.
