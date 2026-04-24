@@ -87,6 +87,7 @@ import { AuthorProfile } from './components/AuthorProfile';
 import { AuthorsList } from './components/AuthorsList';
 import { CultureSection, CultureDetailView, CultureCard } from './components/Culture';
 import { PreferenceSelector } from './components/PreferenceSelector';
+import { UserProfileTabs } from './components/Profile/UserProfileTabs';
 import { 
   SupabaseService, 
   signInWithOtp, 
@@ -499,166 +500,6 @@ const ArticleCard = ({ article, onClick, variant = 'horizontal', onBookmark, isB
   );
 };
 
-const UserProfileView = ({ 
-  user, 
-  likedArticles, 
-  savedArticles, 
-  comments, 
-  onArticleClick, 
-  onLogout,
-  onAuthorClick,
-  onUpgrade,
-  onFollowAuthor,
-  onFollowCategory,
-  onShowPreferences,
-  followedAuthors,
-  followedCategories,
-  badges,
-  points,
-  categoryIcons
-}: { 
-  user: any, 
-  likedArticles: Article[], 
-  savedArticles: Article[], 
-  comments: Comment[],
-  onArticleClick: (a: Article) => void, 
-  onLogout: () => void,
-  onAuthorClick?: (name: string) => void,
-  onUpgrade: () => void,
-  onFollowAuthor?: (author: string) => void,
-  onFollowCategory?: (category: string) => void,
-  onShowPreferences?: () => void,
-  followedAuthors?: Set<string>,
-  followedCategories?: Set<string>,
-  badges?: string[],
-  points?: number,
-  categoryIcons?: Record<string, string>
-}) => {
-  const [activeTab, setActiveTab] = useState<'saved' | 'liked' | 'activity'>('saved');
-
-  return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="max-w-5xl mx-auto space-y-10 py-10"
-    >
-      <div className="bg-white rounded-[40px] p-8 md:p-12 shadow-xl border border-slate-100 flex flex-col md:flex-row items-center gap-8 relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-6 opacity-5">
-           <User size={120} />
-        </div>
-        <img 
-          src={user.photourl || `https://ui-avatars.com/api/?name=${user.displayname || 'User'}`} 
-          className="w-32 h-32 rounded-full border-4 border-primary shadow-xl object-cover aspect-square"
-          referrerPolicy="no-referrer"
-        />
-        <div className="text-center md:text-left space-y-2">
-           <div className="flex items-center justify-center md:justify-start gap-3">
-              <h2 className="text-3xl font-black">{user.displayname || 'Utilisateur Akwaba'}</h2>
-              {user.ispremium && (
-                <div className="px-3 py-1 bg-amber-500 text-white rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
-                   <Lock size={10} fill="white" /> PREMIUM
-                </div>
-              )}
-           </div>
-           <p className="text-slate-500 font-bold">{user.email}</p>
-          <div className="flex flex-wrap justify-center md:justify-start gap-4 pt-4">
-             <div className="flex flex-col items-center px-4 py-2 bg-slate-50 rounded-2xl border border-slate-100 min-w-[80px]">
-                <span className="font-black text-primary text-xl">{savedArticles.length}</span>
-                <span className="text-[10px] uppercase font-bold text-slate-400">Favoris</span>
-             </div>
-             <div className="flex flex-col items-center px-4 py-2 bg-slate-50 rounded-2xl border border-slate-100 min-w-[80px]">
-                <span className="font-black text-primary text-xl">{likedArticles.length}</span>
-                <span className="text-[10px] uppercase font-bold text-slate-400">Likes</span>
-             </div>
-             <div className="flex flex-col items-center px-4 py-2 bg-slate-50 rounded-2xl border border-slate-100 min-w-[80px]">
-                <span className="font-black text-primary text-xl">{comments.length}</span>
-                <span className="text-[10px] uppercase font-bold text-slate-400">Messages</span>
-             </div>
-          </div>
-        </div>
-        <div className="md:ml-auto flex flex-col gap-3 w-full md:w-auto">
-          {!user.ispremium && (
-            <button 
-              onClick={onUpgrade}
-              className="flex items-center justify-center gap-2 px-8 py-4 bg-primary text-white rounded-2xl font-black shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all text-xs uppercase tracking-widest"
-            >
-              <Award size={18} /> Devenir Premium
-            </button>
-          )}
-          <button 
-            onClick={onShowPreferences}
-            className="flex items-center justify-center gap-2 px-8 py-4 bg-white border-2 border-primary/20 text-primary rounded-2xl font-black hover:bg-primary/5 transition-colors text-xs uppercase tracking-widest"
-          >
-            <Star size={18} fill="currentColor" /> Mes Préfèrences
-          </button>
-          <button 
-            onClick={onLogout}
-            className="flex items-center justify-center gap-2 px-8 py-4 bg-slate-100 text-slate-500 rounded-2xl font-bold hover:bg-slate-200 transition-colors text-xs uppercase tracking-widest"
-          >
-            <LogOut size={18} /> Déconnexion
-          </button>
-        </div>
-      </div>
-
-      <div className="space-y-6">
-        <div className="flex border-b border-slate-100">
-           {(['saved', 'liked', 'activity'] as const).map(tab => (
-             <button
-               key={tab}
-               onClick={() => setActiveTab(tab)}
-               className={cn(
-                 "px-8 py-4 text-sm font-black uppercase tracking-widest transition-all relative",
-                 activeTab === tab ? "text-primary border-b-2 border-primary" : "text-slate-400 hover:text-slate-600"
-               )}
-             >
-               {tab === 'saved' ? 'Mes Favoris' : tab === 'liked' ? 'Mes J\'aime' : 'Mon Activité'}
-             </button>
-           ))}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {activeTab === 'saved' && (
-                savedArticles.length > 0 ? savedArticles.map(a => (
-                  <ArticleCard key={a.id} article={a} variant="vertical" onClick={() => onArticleClick(a)} isBookmarked={true} onAuthorClick={onAuthorClick} categoryIcon={categoryIcons?.[a.category]} />
-                )) : (
-                  <div className="col-span-full py-20 text-center space-y-4 bg-slate-50 rounded-[40px] border-2 border-dashed border-slate-200">
-                     <Bookmark size={48} className="mx-auto text-slate-200" />
-                     <p className="text-slate-400 font-bold">Vous n'avez pas encore d'articles enregistrés.</p>
-                  </div>
-                )
-              )}
-              {activeTab === 'liked' && (
-                likedArticles.length > 0 ? likedArticles.map(a => (
-                  <ArticleCard key={a.id} article={a} variant="vertical" onClick={() => onArticleClick(a)} onAuthorClick={onAuthorClick} categoryIcon={categoryIcons?.[a.category]} />
-                )) : (
-              <div className="col-span-full py-20 text-center space-y-4 bg-slate-50 rounded-[40px] border-2 border-dashed border-slate-200">
-                 <Heart size={48} className="mx-auto text-slate-200" />
-                 <p className="text-slate-400 font-bold">On dirait que vous n'avez pas encore aimé d'articles.</p>
-              </div>
-            )
-          )}
-          {activeTab === 'activity' && (
-            comments.length > 0 ? comments.map(c => (
-              <div key={c.id} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-3">
-                 <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Commentaire</span>
-                    <span className="text-[10px] font-bold text-slate-400">{safeFormatDate(c.date, 'dd/MM/yyyy')}</span>
-                 </div>
-                 <p className="text-slate-600 italic text-sm">"{c.content}"</p>
-                 <button className="text-primary text-xs font-bold hover:underline">Voir l'article</button>
-              </div>
-            )) : (
-              <div className="col-span-full py-20 text-center space-y-4 bg-slate-50 rounded-[40px] border-2 border-dashed border-slate-200">
-                 <MessageSquare size={48} className="mx-auto text-slate-200" />
-                 <p className="text-slate-400 font-bold">Aucun commentaire publié pour le moment.</p>
-              </div>
-            )
-          )}
-        </div>
-      </div>
-    </motion.div>
-  );
-};
 const ArticleCarousel = ({ 
   articles, 
   onArticleClick, 
@@ -1740,6 +1581,16 @@ const SupportChatWidget = ({ user, isDarkMode }: { user: FirebaseUser | null, is
   }, [user, isOpen]);
 
   useEffect(() => {
+    if (messages.length > 0) {
+      const last = messages[messages.length - 1];
+      const isRecent = new Date(last.date).getTime() > Date.now() - 5000;
+      if (last.isadmin && isRecent) {
+        playNotificationSound('message');
+      }
+    }
+  }, [messages]);
+
+  useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
@@ -2471,12 +2322,23 @@ export default function App() {
         // Show the latest unread notification as a toast if it's new
         const latest = notifs.find(n => !n.read);
         if (latest && latest.date > new Date(Date.now() - 1000 * 60).toISOString()) {
-            setActiveNotification(latest.title);
+            setActiveNotification({ message: latest.title, type: latest.type === 'urgent' ? 'urgent' : 'info' });
+            playNotificationSound(latest.type === 'urgent' ? 'urgent' : 'info');
         }
       });
       return () => unsubscribe();
     }
   }, [currentUser]);
+
+  useEffect(() => {
+    const unsubscribe = SupabaseService.subscribeToArticles((article) => {
+      if (article.category === 'Urgent') {
+        playNotificationSound('urgent');
+        setActiveNotification({ message: `URGENT : ${article.title}`, type: 'urgent' });
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -2777,6 +2639,7 @@ export default function App() {
               premiumuntil: profile?.premiumuntil 
             } : null);
             setActiveNotification({ message: "Paiement confirmé ! Bienvenue dans le Club Premium.", type: 'success' });
+            playNotificationSound('payment');
             // Cleanup URL
             window.history.replaceState({}, '', window.location.pathname);
           });
@@ -5344,23 +5207,15 @@ export default function App() {
               )}
             </motion.div>
           ) : currentView === 'profile' && currentUser ? (
-            <UserProfileView 
+            <UserProfileTabs 
               user={currentUser}
-              savedArticles={adminArticles.filter(a => userBookmarkedArticles.has(a.id))}
-              likedArticles={adminArticles.filter(a => userLikedArticles.has(a.id))}
-              followedAuthors={userFollowedAuthors}
-              followedCategories={userFollowedCategories}
-              badges={userBadges}
-              points={userPoints}
-              comments={Object.values(articleComments).flat().filter(c => c.userid === currentUser.uid)}
-              onArticleClick={handleArticleClick}
-              onLogout={handleUserLogout}
-              onAuthorClick={handleAuthorClick}
-              onUpgrade={() => setShowPremiumModal(true)}
-              onFollowAuthor={handleFollowAuthor}
-              onFollowCategory={handleFollowCategory}
-              onShowPreferences={() => setShowPreferenceModal(true)}
-              categoryIcons={siteSettings?.categories_icons}
+              onUpdate={async (updates) => {
+                if (currentUser) {
+                  await SupabaseService.updateUserProfile(currentUser.uid, updates);
+                  setCurrentUser({ ...currentUser, ...updates });
+                }
+              }}
+              activityLogs={adminLogs}
             />
           ) : currentView === 'donate' ? (
             <motion.div 

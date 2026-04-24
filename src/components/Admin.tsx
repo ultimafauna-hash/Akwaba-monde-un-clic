@@ -13,6 +13,8 @@ import {
   Search,
   ChevronRight,
   Eye,
+  Hash,
+  Shield,
   Search as SearchIcon,
   Plus as PlusIcon,
   Trash as TrashIcon,
@@ -413,6 +415,18 @@ const safeFormatDateAdmin = (dateStr: any, formatStr: string = 'dd MMM yyyy') =>
   }
 };
 
+const playNotificationSound = (type: 'info' | 'urgent' | 'message' | 'payment' = 'info') => {
+  const soundUrls = {
+    info: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3',
+    urgent: 'https://www.soundjay.com/buttons/sounds/button-10.mp3',
+    message: 'https://www.soundjay.com/communication/sounds/pda-text-1.mp3',
+    payment: 'https://www.soundjay.com/misc/sounds/cash-register-05.mp3'
+  };
+  const audio = new Audio(soundUrls[type] || soundUrls.info);
+  audio.volume = 0.3;
+  audio.play().catch(e => console.warn("Audio play blocked by browser:", e));
+};
+
 export const AdminDashboard = ({ 
   articles, 
   events,
@@ -629,8 +643,24 @@ export const AdminDashboard = ({
   const [replyText, setReplyText] = useState('');
 
   useEffect(() => {
+    const unsubscribe = SupabaseService.subscribeToTransactions((tx) => {
+      if (tx.status === 'success' || tx.status === 'pending') {
+        playNotificationSound('payment');
+        if (setActiveNotification) {
+          setActiveNotification({ message: `Nouveau Paiement : ${tx.amount} XOF de ${tx.email}`, type: 'success' });
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, [setActiveNotification]);
+
+  useEffect(() => {
     if (activeTab === 'support') {
       const unsub = SupabaseService.subscribeToAllSupportMessages((userid, msgs) => {
+        const last = msgs[msgs.length - 1];
+        if (last && !last.isadmin && new Date(last.date).getTime() > Date.now() - 5000) {
+            playNotificationSound('message');
+        }
         setAllSupportMessages(prev => ({ ...prev, [userid]: msgs }));
       });
       return unsub;
@@ -761,6 +791,7 @@ export const AdminDashboard = ({
             { id: 'analytics', label: 'Statistiques', icon: Activity },
             { id: 'activity-log', label: 'Sécurité & Logs', icon: ShieldCheck },
             { id: 'payments', label: 'Paiements', icon: CreditCard },
+            { id: 'admin-profile', label: 'Mon Profil Admin', icon: User },
             { id: 'settings', label: 'Paramètres', icon: Settings },
           ].map(item => (
             <button
@@ -1034,6 +1065,197 @@ export const AdminDashboard = ({
                  {activeTab === 'quiz' && <QuizManager />}
                  {activeTab === 'diaspora' && <StoryManager />}
               </div>
+
+               {activeTab === 'admin-profile' && currentUser && (
+                 <motion.div 
+                   initial={{ opacity: 0, y: 10 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   className="max-w-4xl mx-auto space-y-8 pb-24"
+                 >
+                   <div className="bg-white rounded-[40px] border border-slate-100 shadow-2xl overflow-hidden">
+                     <div className="h-48 bg-primary relative">
+                       <div className="absolute inset-0 african-pattern opacity-20" />
+                       <div className="absolute -bottom-16 left-12">
+                         <div className="relative group">
+                           <img 
+                             src={currentUser.photourl || `https://ui-avatars.com/api/?name=${currentUser.displayname || 'Admin'}`} 
+                             className="w-32 h-32 rounded-[30px] border-8 border-white shadow-2xl object-cover bg-white"
+                             referrerPolicy="no-referrer"
+                           />
+                           <div className="absolute inset-0 rounded-[30px] bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white cursor-pointer">
+                             <Camera size={24} />
+                           </div>
+                         </div>
+                       </div>
+                     </div>
+                     
+                     <div className="pt-20 pb-12 px-12 space-y-10">
+                       <div className="flex justify-between items-start">
+                         <div>
+                           <div className="flex items-center gap-3">
+                              <h3 className="text-3xl font-black italic">{currentUser.displayname}</h3>
+                              <div className="p-1 bg-primary/10 rounded-full text-primary">
+                                 <CheckCircle size={14} />
+                              </div>
+                           </div>
+                           <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mt-1">Super Administrateur • Akwaba Info</p>
+                         </div>
+                         <div className="flex gap-2">
+                            <span className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-emerald-100">Session Sécurisée</span>
+                         </div>
+                       </div>
+     
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                         <div className="space-y-2">
+                           <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Nom complet public</label>
+                           <div className="relative">
+                             <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                             <input 
+                               type="text" 
+                               defaultValue={currentUser.displayname}
+                               className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-12 pr-6 py-4 text-sm font-bold outline-none focus:border-primary transition-all text-slate-900"
+                             />
+                           </div>
+                         </div>
+                         <div className="space-y-2">
+                           <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Identifiant unique (Username)</label>
+                           <div className="relative">
+                             <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                             <input 
+                               type="text" 
+                               defaultValue={currentUser.username}
+                               className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-12 pr-6 py-4 text-sm font-bold outline-none focus:border-primary transition-all text-slate-900"
+                             />
+                           </div>
+                         </div>
+                       </div>
+
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                         <div className="space-y-2">
+                           <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Email (Lecture seule)</label>
+                           <div className="relative">
+                             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                             <input 
+                               type="email" 
+                               value={currentUser.email}
+                               disabled
+                               className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-12 pr-6 py-4 text-sm font-bold outline-none opacity-50 cursor-not-allowed text-slate-500"
+                             />
+                           </div>
+                         </div>
+                         <div className="space-y-2">
+                           <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Niveau d'accés</label>
+                           <div className="relative">
+                             <Shield className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                             <input 
+                               type="text" 
+                               value="ADMINISTRATEUR PRINCIPAL"
+                               disabled
+                               className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-12 pr-6 py-4 text-sm font-bold outline-none opacity-50 cursor-not-allowed text-slate-500"
+                             />
+                           </div>
+                         </div>
+                       </div>
+     
+                       <div className="pt-6 border-t border-slate-100 flex justify-between items-center">
+                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest italic">Dernière activité : {safeFormatDateAdmin(currentUser.last_active_date || new Date().toISOString())}</p>
+                         <button className="bg-slate-900 text-white font-black px-10 py-5 rounded-2xl hover:scale-105 active:scale-95 transition-all text-[10px] uppercase tracking-widest shadow-xl shadow-slate-900/10 flex items-center gap-2">
+                           <Save size={16} /> Mettre à jour le profil Admin
+                         </button>
+                       </div>
+                     </div>
+                   </div>
+
+                   <div className="bg-white rounded-[40px] border border-slate-100 shadow-2xl p-10 space-y-10">
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-primary/10 text-primary rounded-2xl">
+                           <LayoutDashboard size={28} />
+                        </div>
+                        <div>
+                           <h4 className="text-xl font-black italic">Préférences du Dashboard</h4>
+                           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Personnalisez votre interface de travail</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 flex items-center justify-between">
+                           <div>
+                              <p className="font-black text-sm">Notifications Sonores</p>
+                              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Sons lors des nouvelles alertes</p>
+                           </div>
+                           <button 
+                             onClick={() => {
+                               // Logic to toggle sound preference
+                               alert("Préférence sonore mise à jour !");
+                             }}
+                             className={cn(
+                                "w-12 h-6 rounded-full relative transition-colors bg-primary"
+                             )}
+                           >
+                              <div className="absolute top-1 right-1 w-4 h-4 bg-white rounded-full" />
+                           </button>
+                        </div>
+
+                        <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 flex items-center justify-between">
+                           <div>
+                              <p className="font-black text-sm">Vue Compacte</p>
+                              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Réduire l'espacement des listes</p>
+                           </div>
+                           <button className="w-12 h-6 rounded-full relative transition-colors bg-slate-300">
+                              <div className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full" />
+                           </button>
+                        </div>
+                      </div>
+                   </div>
+
+                   <div className="bg-white rounded-[40px] border border-slate-100 shadow-2xl p-10 space-y-10">
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-red-50 text-red-500 rounded-2xl">
+                           <Lock size={28} />
+                        </div>
+                        <div>
+                           <h4 className="text-xl font-black italic">Zone de Sécurité</h4>
+                           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Protégez votre accés administrateur</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 flex flex-col gap-4">
+                           <div className="flex items-center justify-between">
+                              <Smartphone className="text-primary" size={24} />
+                              <span className={cn(
+                                 "px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest",
+                                 currentUser.two_factor_enabled ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-500"
+                              )}>
+                                 {currentUser.two_factor_enabled ? 'Activé' : 'Désactivé'}
+                              </span>
+                           </div>
+                           <div>
+                              <p className="font-bold text-slate-900">Auth Double Facteur (2FA)</p>
+                              <p className="text-xs text-slate-500 leading-relaxed">Ajoutez une couche de sécurité supplémentaire via email ou OTP.</p>
+                           </div>
+                           <button className="w-full py-3 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest hover:border-primary hover:text-primary transition-all">
+                              Configurer la 2FA
+                           </button>
+                        </div>
+
+                        <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 flex flex-col gap-4">
+                           <div className="flex items-center justify-between">
+                              <ShieldCheck className="text-primary" size={24} />
+                              <span className="px-3 py-1 bg-emerald-100 text-emerald-600 rounded-full text-[8px] font-black uppercase tracking-widest">Code Actif</span>
+                           </div>
+                           <div>
+                              <p className="font-bold text-slate-900">Code PIN de Sécurité</p>
+                              <p className="text-xs text-slate-500 leading-relaxed">Requis pour valider les exports de données et les paiements.</p>
+                           </div>
+                           <button className="w-full py-3 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest hover:border-primary hover:text-primary transition-all">
+                              Changer le code PIN
+                           </button>
+                        </div>
+                      </div>
+                   </div>
+                 </motion.div>
+               )}
 
               {activeTab === 'settings' && (
                 <motion.div 

@@ -1161,6 +1161,59 @@ export const SupabaseService = {
       ...log,
       created_at: new Date().toISOString()
     });
+  },
+
+  async getReferralStats(userId: string): Promise<{ total: number, active: number, earnings: number }> {
+    if (isPlaceholder) return { total: 12, active: 8, earnings: 12500 };
+    // Get referrals from 'profiles' table where 'referred_by' equals current user's referral code
+    const { data: profile } = await supabase.from('profiles').select('referral_code').eq('uid', userId).single();
+    if (!profile?.referral_code) return { total: 0, active: 0, earnings: 0 };
+    
+    const { data: referrals } = await supabase.from('profiles').select('uid, ispremium').eq('referred_by', profile.referral_code);
+    if (!referrals) return { total: 0, active: 0, earnings: 0 };
+    
+    const active = referrals.filter(r => r.ispremium).length;
+    return {
+      total: referrals.length,
+      active,
+      earnings: active * 1000 // Sample earning logic
+    };
+  },
+
+  async verify2FACode(userId: string, code: string): Promise<boolean> {
+    if (isPlaceholder) return code === '123456';
+    // Logic for 2FA verification (e.g. check against a secret stored in another table or just simulate for now)
+    return code === '123456'; 
+  },
+
+  async verifyPIN(userId: string, pin: string): Promise<boolean> {
+    if (isPlaceholder) return pin === '1234';
+    const { data } = await supabase.from('profiles').select('pin_code_hash').eq('uid', userId).single();
+    if (!data?.pin_code_hash) return false;
+    // Simple equality check for now (assuming plain text for the demo or hash comparison logic)
+    return data.pin_code_hash === pin;
+  },
+
+  subscribeToArticles(callback: (article: Article) => void) {
+    if (isPlaceholder) return () => {};
+    const channel = supabase
+      .channel('public:articles')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'articles' }, (payload: any) => {
+        callback(payload.new as Article);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  },
+
+  subscribeToTransactions(callback: (transaction: any) => void) {
+    if (isPlaceholder) return () => {};
+    const channel = supabase
+      .channel('public:transactions')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'transactions' }, (payload: any) => {
+        callback(payload.new);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }
 };
 

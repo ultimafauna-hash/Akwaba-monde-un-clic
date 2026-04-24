@@ -120,6 +120,13 @@ export interface UserProfile {
   referred_by?: string;
   streak_days: number;
   last_active_date?: string;
+  secondary_email?: string;
+  website_url?: string;
+  is_2fa_enabled?: boolean;
+  pin_code_hash?: string;
+  read_count?: number;
+  loyalty_points?: number;
+  theme?: 'light' | 'dark' | 'system';
   likedarticles: string[];
   bookmarkedarticles: string[];
   followedauthors: string[];
@@ -133,6 +140,13 @@ export interface UserProfile {
   premiumuntil?: string; // ISO date string
   paymentmethod?: string;
   history?: { articleid: string; date: string }[];
+  dashboard_preferences?: {
+    theme: 'light' | 'dark' | 'system';
+    sidebar_collapsed: boolean;
+    compact_view: boolean;
+    default_tab: string;
+  };
+  notifications_sound?: boolean;
 }
 
 export interface AdminActivityLog {
